@@ -1,3 +1,2 @@
-bad
-good
-                ok
+@i
+0:JMP

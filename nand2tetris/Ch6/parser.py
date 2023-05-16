@@ -16,13 +16,14 @@ def advance():
         
     line = line.strip()
     
-    if (line[:2] == ('//' or '')): #test for comment or whitespace
+    if ((line == '') or (line[:2] == '//')): #test for comment or whitespace
         line = advance()
     
     return line
 
 def instructionType(line):
-    #check if ampersand present or if in symbol table, 
+    #check if ampersand present for a-instruct
+    #  or left parenthesis for label, 
     # otherwise is a c-instruction
     if line[0] == '@':
         return 'A_INSTRUCTION'
@@ -34,7 +35,9 @@ def instructionType(line):
 def symbol(line, instruction_type):
     if instruction_type == 'A_INSTRUCTION':
         return line[1:]
-    #TODO Add L_INSTRUCTION LOGIC
+    else:
+        #Is a label
+        return line[1:line.find(')')]
 
 def dest(line):
     if '=' in line:
@@ -64,9 +67,9 @@ def comp(line):
     
 
 with open(input_filename, 'r') as assembly_file:
-#    with open(output_filename, 'w') as machine_file:
 
-    while(line != ''): #EOF ends loop
+
+    while(line != ''): #EOF ends loop (TODO change to flag)
         line = advance()
         print(line)
         
@@ -75,11 +78,22 @@ with open(input_filename, 'r') as assembly_file:
         
         if(instruction_type == ('A_INSTRUCTION' or 'L_INSTRUCTION')):
             s = symbol(line, instruction_type)
+            #TODO lookup s in symbol table and convert to number if present
+            #TODO convert s to 15-bit binary and prepend 0, then convert to string
 
         else:
             d = dest(line)
+            #dbin = code.dest(d) Convert symbol to binary
             c = comp(line)
+            #cbin = code.comp(c) Convert symbol to binary
             j = jump(line)
+            #jbin =code.jump(j) Convert symbol to binary
+            #TODO link 111 + c + d + j, then convert back to string
+        
+        #TODO Write binary line to file
+        #    with open(output_filename, 'a') as machine_file:
+        #           line += '\n'
+        #           machine_file.write(line)
 
 
 
