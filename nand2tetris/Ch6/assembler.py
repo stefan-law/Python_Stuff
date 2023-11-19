@@ -3,6 +3,7 @@
 
 import sys
 
+
 class Parser:
     """
     creates Parser, Code instances
@@ -19,11 +20,13 @@ class Parser:
             for line in file:
                 self._command_list.append(line)
 
-        for line in self._command_list:
-            line.strip()  # strip whitespace
+        for count, line in enumerate(self._command_list):
             if "//" in line:
                 deletion_index = line.find("//")
-                self._command_list[line] = line[:deletion_index]  # slice out comments
+                self._command_list[count] = line[:deletion_index]
+
+        self._command_list = [line.strip() for line in self._command_list] # remove white space
+        self._command_list = [line for line in self._command_list if line != '']  # remove empty strings
 
         self._command_list_length = len(self._command_list)
         self._command_list_index = 0
