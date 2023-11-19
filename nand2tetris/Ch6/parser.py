@@ -1,8 +1,8 @@
 import sys
 
 #Take second argument (input filename) from CLI ands open file in read mode
-input_filename = sys.argv[1]
-output_filename = input_filename[:-3] + "hack"
+#input_filename = sys.argv[1]
+#output_filename = input_filename[:-3] + "hack"
 
 line = ' '
 
@@ -94,6 +94,7 @@ with open(input_filename, 'r') as assembly_file:
         #    with open(output_filename, 'a') as machine_file:
         #           line += '\n'
         #           machine_file.write(line)
+
 
 
 
