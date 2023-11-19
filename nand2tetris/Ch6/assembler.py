@@ -162,7 +162,12 @@ class Assembler:
         """
 
         """
-        binary = bin(self._parser.symbol('A_INSTRUCTION'))
+        binary = bin(self._parser.symbol('A_INSTRUCTION')).replace("0b", "")
+        padding = 16 - len(binary)
+
+        if padding > 0:
+            for zero in range(padding):
+                binary = '0' + binary
 
         with open(self._output_filename, 'a') as file:
             file.write(binary + '\n')
