@@ -91,16 +91,15 @@ class Parser:
         """
 
         """
-        left_slice_index = 0
-        right_slice_index = 0
+        comp_slice = ''
 
         if '=' in self._command:
-            left_slice_index = self._command.find('=') + 1
+            comp_slice = self._command[self._command.find('=') + 1:]
 
         if ';' in self._command:
-            right_slice_index = self._command.find(';')
+            comp_slice = comp_slice[:self._command.find(';')]
 
-        return self._command[left_slice_index:right_slice_index]
+        return comp_slice
 
     def jump(self):
         """
