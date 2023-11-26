@@ -30,9 +30,14 @@ class Parser:
         self._command_list = [line.strip() for line in self._command_list]  # remove white space
         self._command_list = [line for line in self._command_list if line != '']  # remove empty strings
 
+        self._label_count = 0  # this helps account for labels as they are deleted
+
         for count, line in enumerate(self._command_list):  # find and add labels to symbol table
             if self.instruction_type(line) == 'L_INSTRUCTION':
-                self._symbol_table.addEntry(self.symbol('L_INSTRUCTION', line), count)
+                self._symbol_table.add_entry(self.symbol('L_INSTRUCTION', line), count - self._label_count)
+                self._label_count += 1
+
+        # first pass is essentially completed at this point
 
         self._command_list = [line for line in self._command_list if line[0] != '(']  # remove labels
 
@@ -68,7 +73,7 @@ class Parser:
             position_1_character = self._command[0]
 
         if line != '':
-            position_1_character = line
+            position_1_character = line[0]
 
         if position_1_character == '@':
             return 'A_INSTRUCTION'
@@ -188,24 +193,23 @@ class Assembler:
         """
         symbol = self._parser.symbol('A_INSTRUCTION')
 
-        if symbol[1:].isalnum():  # handle labels and variables
-            if self._symbol_table.contains(symbol):
+        if symbol.isnumeric():  # handle numeric addresses and write to binary
+            binary = bin(int(self._parser.symbol('A_INSTRUCTION'))).replace("0b", "")
+        else:  # handle labels and variables
+            if self._symbol_table.contains(symbol):  # symbol already in table
                 binary = bin(int(self._symbol_table.get_address(symbol))).replace("0b", "")
-            else:
+            else:  # symbol not in table, add to table and then create instruction
                 self._symbol_table.add_entry(symbol, self._symbol_address)
                 self._symbol_address += 1
                 binary = bin(int(self._symbol_table.get_address(symbol))).replace("0b", "")
 
-        else:  # handle numeric addresses
-            binary = bin(int(self._parser.symbol('A_INSTRUCTION'))).replace("0b", "")
-
-        padding = 16 - len(binary)
+        padding = 16 - len(binary) # ensure 16-bit binary
 
         if padding > 0:
             for zero in range(padding):
                 binary = '0' + binary
 
-        with open(self._output_filename, 'a') as file:
+        with open(self._output_filename, 'a') as file:  # write binary to file
             file.write(binary + '\n')
 
 
@@ -310,13 +314,13 @@ class SymbolTable:
 
     def add_entry(self, symbol, address):
         """
-
+        add symbol to symbol table with associated address
         """
         self._symbol_table[symbol] = address
 
     def contains(self, symbol):
         """
-
+        check to see if symbol already contained in symbol table
         """
         if symbol in self._symbol_table:
             return True
@@ -325,7 +329,7 @@ class SymbolTable:
 
     def get_address(self, symbol):
         """
-
+        returns address of queried symbol in symbol table
         """
         return self._symbol_table[symbol]
 
