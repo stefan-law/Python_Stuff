@@ -97,6 +97,58 @@ class CodeWriter:
         else:
             self._output_file.write(pop_segments.get(segment))
 
+    def writeLabel(self, label):
+        """
+        label (string)
+        """
+        pass
+
+    def writeGoto(self, label):
+        """
+        label (string)
+        """
+        pass
+
+    def writeIf(self, label):
+        """
+
+        :param label: string
+        :return:
+        """
+        pass
+
+    def writeFunction(self, function_name, n_vars):
+        """
+
+        :param function_name: string
+        :param n_vars: int
+        :return:
+        """
+        pass
+
+    def writeCall(self, function_name, n_args):
+        """
+
+        :param function_name: string
+        :param n_args: int
+        :return:
+        """
+        pass
+
+    def writeReturn(self):
+        """
+
+        :return:
+        """
+        pass
+
+    def setFileName(self, file_name):
+        """
+        file_name (string)
+        Informs that the translation of a new VM file has started (called by the VMTranslator)
+        """
+        pass
+
     def close(self):
         """"""
         self.write_end_loop()  # write an infinite loop at end of code to protect memory intrusion
