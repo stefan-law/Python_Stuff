@@ -4,12 +4,14 @@
 
 class Parser:
     """
-
+    Defines Parser class to be called by VMTranslator
     """
 
     def __init__(self, input_filename):
         """
-
+        Takes input_filename(string) as argument
+        Enumerate through file to determine line count/file length
+        Open file (again) in read mode (since enumerate will move head to end of file)
         """
         with open(input_filename, 'r') as file:
             for count, line in enumerate(file):  # determine number of lines
@@ -24,7 +26,7 @@ class Parser:
 
     def hasMoreLines(self):
         """
-
+        determine location of file reading head in relation to length of file
         """
         if self._line_index <= self._line_count:
             return True
@@ -48,7 +50,7 @@ class Parser:
         """
 
         """
-        command = self._current_command.split()[0]
+        command = self._current_command.split()[0]  # lex out first part of command
         arithmetic_operators = ['add', 'sub', 'neg', 'eq', 'gt', 'lt', 'and', 'or', 'not']
 
         if command in arithmetic_operators:
@@ -61,15 +63,19 @@ class Parser:
         """Implement return criteria for label, goto, if, function, return, and call"""
 
     def arg1(self):
-        """"""
+        """
+        return 1st argument
+        """
         return self._current_command.split()[1]
 
     def arg2(self):
-        """"""
+        """
+        return 2nd argument
+        """
         return int(self._current_command.split()[2])
 
     def get_command(self):
         """
-        :return:
+        return command
         """
         return self._current_command
