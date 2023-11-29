@@ -36,8 +36,14 @@ class VMTranslator:
 
             if self._parser.commandType() == 'C_ARITHMETIC':  # command is an arithmetic/logic command
                 self._codewriter.writeArithmetic(self._parser.get_command())
-            elif self._parser.commandType() == 'C_POP' or 'C_PUSH':  # command is a pop or push command
+            elif self._parser.commandType() in ('C_POP', 'C_PUSH'):  # command is a pop or push command
                 self._codewriter.writePushPop(self._parser.commandType(), self._parser.arg1(), self._parser.arg2())
+            elif self._parser.commandType() == 'C_LABEL':  # command is a label
+                self._codewriter.writeLabel(self._parser.arg1())
+            elif self._parser.commandType() == 'C_GOTO':  # command is unconditional goto
+                self._codewriter.writeGoto(self._parser.arg1())
+            elif self._parser.commandType() == 'C_IF':  # command is conditional goto
+                self._codewriter.writeIf(self._parser.arg1())
 
         self._codewriter.close()  # calls method that adds infinite loop at end of file and closes it.
 

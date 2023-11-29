@@ -74,15 +74,21 @@ class Parser:
 
     def arg1(self):
         """
-        return 1st argument
+        return 1st argument (string)
         """
-        return self._current_command.split()[1]
+        if self._current_command.split()[1] is None:
+            return 'blank'
+        else:
+            return self._current_command.split()[1]
 
     def arg2(self):
         """
-        return 2nd argument
+        return 2nd argument(int)
         """
-        return int(self._current_command.split()[2])
+        try:
+            return int(self._current_command.split()[2])
+        except IndexError:
+            return 0
 
     def get_command(self):
         """
