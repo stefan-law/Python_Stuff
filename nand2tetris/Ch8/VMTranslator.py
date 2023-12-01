@@ -3,6 +3,7 @@
 # Description:
 
 import sys  # will be used for parsing arguments from CLI (i.e. filename to be translated)
+import os
 from Parser import Parser
 from CodeWriter import CodeWriter
 
@@ -19,15 +20,29 @@ class VMTranslator:
         create Parser and CodeWriter objects
         """
         self._input_filename = sys.argv[1]
-        self._parser = Parser(self._input_filename)
-        self._codewriter = CodeWriter(sys.argv[1], self._parser)
+        self._parser_count = 1
+        self._parser_dict = {}
 
-    def translate(self):
+        if sys.argv[1][-3:] == '.vm':
+            self._parser_dict[sys.argv[1]] = Parser(self._input_filename)
+        else:
+            for filename in os.listdir():
+                if filename[-3:] == '.vm':
+                    self._parser_dict[filename] = Parser(filename)
+                    self._parser_count += 1
+
+        self._codewriter = CodeWriter(self._parser_dict)
+
+    def translate(self, parser):
         """
         Iterates through each line of input file
         Determines command type
         Writes command
         """
+
+        for key, value in self._parser_dict:
+
+
         while self._parser.hasMoreLines():  # check to see if any more lines in file
             self._parser.advance()  # go to next line in file and make active command
 
@@ -44,6 +59,12 @@ class VMTranslator:
                 self._codewriter.writeGoto(self._parser.arg1())
             elif self._parser.commandType() == 'C_IF':  # command is conditional goto
                 self._codewriter.writeIf(self._parser.arg1())
+            elif self._parser.commandType() == 'C_FUNCTION':
+                self._codewriter.writeFunction(self._parser.arg1(), self._parser.arg2())
+            elif self._parser.commandType() == 'C_RETURN':
+                self._codewriter.writeReturn()
+            elif self._parser.commandType() == 'C_CALL':
+                self._codewriter.writeCall(self._parser.arg1(), self._parser.arg2())
 
         self._codewriter.close()  # calls method that adds infinite loop at end of file and closes it.
 

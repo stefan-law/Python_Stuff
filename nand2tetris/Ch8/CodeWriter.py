@@ -1,6 +1,8 @@
 # Author: Stefan A. Law
 # Date: 11/25/2023
 # Description:
+import sys
+
 
 class CodeWriter:
     """
@@ -9,15 +11,35 @@ class CodeWriter:
     Has method for adding infinite loop at end of file and closing it when translation complete
     """
 
-    def __init__(self, input_filename, parser):
+    def __init__(self, parser_dict):
         """
         Takes input filename (string) and parser (object) as arguments
         """
-        self._output_filename = input_filename[:-2] + 'asm'  # create the output filename
-        self._output_file = open(self._output_filename, 'w')  # create the output file and open in write mode
-        self._parser = parser  # reference to parser object
-        self._label_count = 0  # allows us to write an arbitrary number of labels and will be iterated
+        self._output_filename = sys.argv[1]
+        if '.vm' in self._output_filename:
+            self._output_filename = self._output_filename[:-3] # create the output filename
 
+        dict_keys = []
+        for keys, values in parser_dict:
+            dict_keys.append(keys)
+
+        self._input_filename = dict_keys[0]
+        self._output_file = open(self._output_filename, 'w')  # create the output file and open in write mode
+        self._parser_dict = parser_dict
+
+        self._active_parser = self._parser_dict[dict_keys[0]]
+
+        self._label_count = 0  # allows us to write an arbitrary number of labels and will be iterated
+        self._return_label_index = 0 # allows us to write an arbitrary number of return address labels
+        self._parser_count = 0
+
+        # bootstrap code
+        self._output_file.write('//bootstrap code')
+        self._output_file.write('\t@256\n')
+        self._output_file.write('\t@D=A\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tM=D\n')
+        self.writeCall('Sys.init',0)
 
 
     def writeArithmetic(self, operator):
@@ -109,8 +131,8 @@ class CodeWriter:
         label (string)
         """
         self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
-        self._output_file.write('@'+label)
-        self._output_file.write('0;JMP')
+        self._output_file.write('@'+label+'\n')
+        self._output_file.write('0;JMP\n')
 
     def writeIf(self, label):
         """
@@ -128,15 +150,27 @@ class CodeWriter:
         self._output_file.write('\t@'+label+'\n')
         self._output_file.write('\tD;JNE\n')
 
-
     def writeFunction(self, function_name, n_vars):
         """
-
         :param function_name: string
         :param n_vars: int
         :return:
         """
-        pass
+        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
+
+        # function name/label
+        self._output_file.write('(' + function_name + ')\n')
+
+        # repeat nVars times: push zero
+        n_vars_count = n_vars
+        while n_vars_count != 0:
+            self._output_file.write('\t@SP\n')
+            self._output_file.write('\tA=M\n')
+            self._output_file.write('\tM=0\n')
+            self._output_file.write('\t@SP\n')
+            self._output_file.write('\tM=M+1\n')
+
+            n_vars_count -= 1
 
     def writeCall(self, function_name, n_args):
         """
@@ -145,21 +179,160 @@ class CodeWriter:
         :param n_args: int
         :return:
         """
-        pass
+        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
+
+        label = self._input_filename + '.' + function_name + '$ret.' + str(self._return_label_index)
+
+        # push return address
+        self._output_file.write('\t@' +label + '\n')
+        self._output_file.write('\tD=A\n')
+        self._output_file.write('\tA=M\n')
+        self._output_file.write('\tM+D\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tM=M+1\n')
+
+        #push LCL
+        self._output_file.write('\t@LCL\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tA=M\n')
+        self._output_file.write('\tM=D\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tM=M+1\n')
+
+        #push ARG
+        self._output_file.write('\t@ARG\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tA=M\n')
+        self._output_file.write('\tM=D\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tM=M+1\n')
+
+        #push THIS
+        self._output_file.write('\t@THIS\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tA=M\n')
+        self._output_file.write('\tM=D\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tM=M+1\n')
+
+        #push THAT
+        self._output_file.write('\t@THAT\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tA=M\n')
+        self._output_file.write('\tM=D\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tM=M+1\n')
+
+        #@ARG =SP - 5 - nArgs
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@5\n')
+        self._output_file.write('\tD=D-A\n')
+        self._output_file.write('\t@' + str(n_args) + '\n')
+        self._output_file.write('\tD=D-A\n')
+        self._output_file.write('\t@ARG\n')
+        self._output_file.write('\tM=D\n')
+
+        # LCL = SP
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@LCL\n')
+        self._output_file.write('\tM=D\n')
+
+        # goto function
+        self._output_file.write('\t@' + function_name + '\n')
+        self._output_file.write('\t0;JEQ\n')
 
     def writeReturn(self):
         """
 
         :return:
         """
-        pass
+        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
+
+        # frame (R13) = LCL
+        self._output_file.write('\t@LCL\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@R13\n')
+        self._output_file.write('\tM=D\n')
+
+        # retAddr (R14) = *(frame-5)
+        self._output_file.write('\t@R13\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@5\n')
+        self._output_file.write('\tD=D-A\n')
+        self._output_file.write('\t@R14\n')
+        self._output_file.write('\tM=D\n')
+
+        # ARG = pop()
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tA=M-1\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@ARG\n')
+        self._output_file.write('\tA=M\n')
+        self._output_file.write('\tM=D\n')
+
+        # SP = ARG + 1
+        self._output_file.write('\t@ARG\n')
+        self._output_file.write('\tD=M+1\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tM=D\n')
+
+        # THAT = *(frame - 1)
+        self._output_file.write('\t@R13\n')
+        self._output_file.write('\tD=M-1\n')
+        self._output_file.write('\tA=D\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@THAT\n')
+        self._output_file.write('\tM=D\n')
+
+        # THIS = *(frame -2)
+        self._output_file.write('\t@R13\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@2\n')
+        self._output_file.write('\tD=D-A\n')
+        self._output_file.write('\tA=D\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@THIS\n')
+        self._output_file.write('\tM=D\n')
+
+        # ARG = *(frame-3)
+        self._output_file.write('\t@R13\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@3\n')
+        self._output_file.write('\tD=D-A\n')
+        self._output_file.write('\tA=D\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@ARG\n')
+        self._output_file.write('\tM=D\n')
+
+        # LCL = *(frame-4)
+        self._output_file.write('\t@R13\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@4\n')
+        self._output_file.write('\tD=D-A\n')
+        self._output_file.write('\tA=D\n')
+        self._output_file.write('\tD=M\n')
+        self._output_file.write('\t@LCL\n')
+        self._output_file.write('\tM=D\n')
+
+        # goto retAddr
+        self._output_file.write('\t@R14\n')
+        self._output_file.write('\tA=M\n')
+        self._output_file.write('\t0;JMP\n')
+
 
     def setFileName(self, file_name):
         """
         file_name (string)
         Informs that the translation of a new VM file has started (called by the VMTranslator)
         """
-        pass
+        self._input_filename = file_name
+
 
     def close(self):
         """"""
