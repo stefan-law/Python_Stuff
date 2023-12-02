@@ -1,6 +1,9 @@
 # Author: Stefan A. Law
 # Date: 11/25/2023
 # Description:
+import os
+import sys
+
 
 class Parser:
     """
@@ -13,11 +16,12 @@ class Parser:
         Enumerate through file to determine line count/file length
         Open file (again) in read mode (since enumerate will move head to end of file)
         """
-        with open(input_filename, 'r') as file:
+        path = os.getcwd() + '/' + sys.argv[1] + '/' + input_filename
+        with open(path, 'r') as file:
             for count, line in enumerate(file):  # determine number of lines
                 pass
 
-        self._input_file = open(input_filename, 'r')  # open input file to be parsed
+        self._input_file = open(path, 'r')  # open input file to be parsed
 
         self._line_count = count
         self._line_index = 0

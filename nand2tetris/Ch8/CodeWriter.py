@@ -11,36 +11,53 @@ class CodeWriter:
     Has method for adding infinite loop at end of file and closing it when translation complete
     """
 
-    def __init__(self, parser_dict):
+    def __init__(self, parser_dict, keys):
         """
         Takes input filename (string) and parser (object) as arguments
         """
         self._output_filename = sys.argv[1]
+        self._parser_dict_copy = parser_dict
         if '.vm' in self._output_filename:
-            self._output_filename = self._output_filename[:-3] # create the output filename
+            self._output_filename = self._output_filename[:-3]  # create the output filename
+        self._output_filename = self._output_filename + '.asm'
 
-        dict_keys = []
-        for keys, values in parser_dict:
-            dict_keys.append(keys)
+        self._parser_keys = keys
 
-        self._input_filename = dict_keys[0]
+        self._input_filename = 'Sys'
         self._output_file = open(self._output_filename, 'w')  # create the output file and open in write mode
-        self._parser_dict = parser_dict
 
-        self._active_parser = self._parser_dict[dict_keys[0]]
+        self._active_parser = self._parser_dict_copy[self._parser_keys[0]]
 
         self._label_count = 0  # allows us to write an arbitrary number of labels and will be iterated
-        self._return_label_index = 0 # allows us to write an arbitrary number of return address labels
-        self._parser_count = 0
+        self._return_label_index = 0  # allows us to write an arbitrary number of return address labels
 
         # bootstrap code
-        self._output_file.write('//bootstrap code')
+        self._output_file.write('//bootstrap code\n')
         self._output_file.write('\t@256\n')
-        self._output_file.write('\t@D=A\n')
+        self._output_file.write('\tD=A\n')
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tM=D\n')
-        self.writeCall('Sys.init',0)
-
+        self._output_file.write('\t@1\n')
+        self._output_file.write('\tD=A\n')
+        self._output_file.write('\tD=-D\n')
+        self._output_file.write('\t@LCL\n')
+        self._output_file.write('\tM=D\n')
+        self._output_file.write('\t@2\n')
+        self._output_file.write('\tD=A\n')
+        self._output_file.write('\tD=-D\n')
+        self._output_file.write('\t@ARG\n')
+        self._output_file.write('\tM=D\n')
+        self._output_file.write('\t@3\n')
+        self._output_file.write('\tD=A\n')
+        self._output_file.write('\tD=-D\n')
+        self._output_file.write('\t@THIS\n')
+        self._output_file.write('\tM=D\n')
+        self._output_file.write('\t@4\n')
+        self._output_file.write('\tD=A\n')
+        self._output_file.write('\tD=-D\n')
+        self._output_file.write('\t@THAT\n')
+        self._output_file.write('\tM=D\n')
+        self.writeCall('Sys.init', 0)
 
     def writeArithmetic(self, operator):
         """
@@ -50,9 +67,10 @@ class CodeWriter:
         label = str(self._label_count)
         # this may be added to commands if eq/gt/lt as these ops require label for branching
 
-        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
+        self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
 
-        self._output_file.write("\t@SP\n\tM=M-1\n\t@SP\n\tA=M\n\tD=M")  # common code that all ops need for getting first arg
+        self._output_file.write(
+            "\t@SP\n\tM=M-1\n\t@SP\n\tA=M\n\tD=M")  # common code that all ops need for getting first arg
         operations = {'add': '\n\t@SP\n\tM=M-1\n\t@SP\n\tA=M\n\tD=D+M',
                       'sub': '\n\tD=-D\n\t@SP\n\tM=M-1\n\t@SP\n\tA=M\n\tD=D+M',
                       'neg': '\n\tD=-D',
@@ -64,7 +82,7 @@ class CodeWriter:
                       'or': '\n\t@SP\n\tM=M-1\n\t@SP\n\tA=M\n\tD=D|M'
                       }
         self._output_file.write(operations.get(operator))  # reference above dictionary to obtain needed code
-        self._output_file.write('\n\tM=D\n\t@SP\n\tM=M+1\n') # common code to store result and increment SP
+        self._output_file.write('\n\tM=D\n\t@SP\n\tM=M+1\n')  # common code to store result and increment SP
         if operator == 'eq' or 'gt' or 'lt':  # increase label count for next needed label
             self._label_count += 1
 
@@ -91,11 +109,12 @@ class CodeWriter:
                          'temp': '\t@' + str(
                              index) + '\n\tD=A\n\t@TEMP\n\tA=D+M\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n',
                          'pointer': '\t@' + this_that + '\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n',
-                         'static': '\t@'+self._output_filename[:-3]+str(index)+'\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n'}
+                         'static': '\t@' + self._output_filename[:-3] + str(
+                             index) + '\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n'}
 
         pop_segments = {'local': '\t@' + str(
-                            index) + '\n\tD=A\n\t@LCL\n\tM=D+M\n\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@LCL\n\tA=M\n\tM=D\n\t@' + str(
-                            index) + '\n\tD=A\n\t@LCL\n\tM=M-D\n',
+            index) + '\n\tD=A\n\t@LCL\n\tM=D+M\n\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@LCL\n\tA=M\n\tM=D\n\t@' + str(
+            index) + '\n\tD=A\n\t@LCL\n\tM=M-D\n',
                         'argument': '\t@' + str(
                             index) + '\n\tD=A\n\t@ARG\n\tM=D+M\n\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@ARG\n\tA=M\n\tM=D\n\t@' + str(
                             index) + '\n\tD=A\n\t@ARG\n\tM=M-D\n',
@@ -109,10 +128,11 @@ class CodeWriter:
                             index) + '\n\tD=A\n\t@TEMP\n\tM=D+M\n\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@TEMP\n\tA=M\n\tM=D\n\t@' + str(
                             index) + '\n\tD=A\n\t@TEMP\n\tM=M-D\n',
                         'pointer': '\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@' + this_that + '\n\tM=D\n',
-                        'static': '\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@'+self._output_filename[:-3]+str(index)+'\n\tM=D\n'
+                        'static': '\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@' + self._output_filename[:-3] + str(
+                            index) + '\n\tM=D\n'
                         }
 
-        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
+        self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
 
         if command == 'C_PUSH':  # determine if push or pop and write relevant code from above dicts
             self._output_file.write(push_segments.get(segment))
@@ -123,15 +143,15 @@ class CodeWriter:
         """
         label (string)
         """
-        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
-        self._output_file.write('('+label+')\n')
+        self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
+        self._output_file.write('(' + label + ')\n')
 
     def writeGoto(self, label):
         """
         label (string)
         """
-        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
-        self._output_file.write('@'+label+'\n')
+        self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
+        self._output_file.write('@' + label + '\n')
         self._output_file.write('0;JMP\n')
 
     def writeIf(self, label):
@@ -140,14 +160,14 @@ class CodeWriter:
         :param label: string
         :return:
         """
-        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
+        self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
 
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tA=M-1\n')
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tM=M-1\n')
-        self._output_file.write('\t@'+label+'\n')
+        self._output_file.write('\t@' + label + '\n')
         self._output_file.write('\tD;JNE\n')
 
     def writeFunction(self, function_name, n_vars):
@@ -156,7 +176,7 @@ class CodeWriter:
         :param n_vars: int
         :return:
         """
-        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
+        self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
 
         # function name/label
         self._output_file.write('(' + function_name + ')\n')
@@ -179,19 +199,23 @@ class CodeWriter:
         :param n_args: int
         :return:
         """
-        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
+        if function_name == 'Sys.init':
+            self._output_file.write('//call Sys.init\n')
+        else:
+            self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
 
-        label = self._input_filename + '.' + function_name + '$ret.' + str(self._return_label_index)
+        label = function_name + '$ret.' + str(self._return_label_index)
 
         # push return address
-        self._output_file.write('\t@' +label + '\n')
-        self._output_file.write('\tD=A\n')
-        self._output_file.write('\tA=M\n')
-        self._output_file.write('\tM+D\n')
-        self._output_file.write('\t@SP\n')
+        self._output_file.write('\t@' + label + '\n')  # point to return address
+        self._output_file.write('\tD=A\n')  # store return address in D register
+        self._output_file.write('\t@SP\n')  # point to stack pointer
+        self._output_file.write('\tA=M\n')  # point to top of stack
+        self._output_file.write('\tM=D\n')  # store return address
+        self._output_file.write('\t@SP\n')  # increment stack pointer
         self._output_file.write('\tM=M+1\n')
 
-        #push LCL
+        # push LCL
         self._output_file.write('\t@LCL\n')
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@SP\n')
@@ -200,7 +224,7 @@ class CodeWriter:
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tM=M+1\n')
 
-        #push ARG
+        # push ARG
         self._output_file.write('\t@ARG\n')
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@SP\n')
@@ -209,7 +233,7 @@ class CodeWriter:
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tM=M+1\n')
 
-        #push THIS
+        # push THIS
         self._output_file.write('\t@THIS\n')
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@SP\n')
@@ -218,7 +242,7 @@ class CodeWriter:
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tM=M+1\n')
 
-        #push THAT
+        # push THAT
         self._output_file.write('\t@THAT\n')
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@SP\n')
@@ -227,7 +251,7 @@ class CodeWriter:
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tM=M+1\n')
 
-        #@ARG =SP - 5 - nArgs
+        # @ARG =SP - 5 - nArgs
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@5\n')
@@ -245,14 +269,17 @@ class CodeWriter:
 
         # goto function
         self._output_file.write('\t@' + function_name + '\n')
-        self._output_file.write('\t0;JEQ\n')
+        self._output_file.write('\t0;JEQ\n') \
+ \
+        # return address
+        self._output_file.write('(' + label + ')\n')
 
     def writeReturn(self):
         """
 
         :return:
         """
-        self._output_file.write("// " + self._parser.get_command() + '\n')  # comment for debugging
+        self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
 
         # frame (R13) = LCL
         self._output_file.write('\t@LCL\n')
@@ -265,12 +292,16 @@ class CodeWriter:
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@5\n')
         self._output_file.write('\tD=D-A\n')
+        self._output_file.write('\tA=D\n')
+        self._output_file.write('\tD=M\n')
         self._output_file.write('\t@R14\n')
         self._output_file.write('\tM=D\n')
 
         # ARG = pop()
         self._output_file.write('\t@SP\n')
-        self._output_file.write('\tA=M-1\n')
+        self._output_file.write('\tM=M-1\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tA=M\n')
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@ARG\n')
         self._output_file.write('\tA=M\n')
@@ -325,14 +356,13 @@ class CodeWriter:
         self._output_file.write('\tA=M\n')
         self._output_file.write('\t0;JMP\n')
 
-
     def setFileName(self, file_name):
         """
         file_name (string)
         Informs that the translation of a new VM file has started (called by the VMTranslator)
         """
-        self._input_filename = file_name
-
+        self._input_filename = file_name[:-3]
+        self._active_parser = self._parser_dict_copy[file_name]
 
     def close(self):
         """"""
