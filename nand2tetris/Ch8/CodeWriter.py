@@ -106,8 +106,7 @@ class CodeWriter:
                              index) + '\n\tD=A\n\t@THIS\n\tA=D+M\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n',
                          'that': '\t@' + str(
                              index) + '\n\tD=A\n\t@THAT\n\tA=D+M\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n',
-                         'temp': '\t@' + str(
-                             index) + '\n\tD=A\n\t@TEMP\n\tA=D+M\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n',
+                         'temp': '\t@' + str(index + 5) + '\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1',
                          'pointer': '\t@' + this_that + '\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n',
                          'static': '\t@' + self._output_filename[:-3] + str(
                              index) + '\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n'}
@@ -124,9 +123,7 @@ class CodeWriter:
                         'that': '\t@' + str(
                             index) + '\n\tD=A\n\t@THAT\n\tM=D+M\n\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@THAT\n\tA=M\n\tM=D\n\t@' + str(
                             index) + '\n\tD=A\n\t@THAT\n\tM=M-D\n',
-                        'temp': '\t@' + str(
-                            index) + '\n\tD=A\n\t@TEMP\n\tM=D+M\n\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@TEMP\n\tA=M\n\tM=D\n\t@' + str(
-                            index) + '\n\tD=A\n\t@TEMP\n\tM=M-D\n',
+                        'temp': '\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@' + str(index + 5) + '\n\tM=D\n',
                         'pointer': '\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@' + this_that + '\n\tM=D\n',
                         'static': '\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@' + self._output_filename[:-3] + str(
                             index) + '\n\tM=D\n'
@@ -269,8 +266,8 @@ class CodeWriter:
 
         # goto function
         self._output_file.write('\t@' + function_name + '\n')
-        self._output_file.write('\t0;JEQ\n') \
- \
+        self._output_file.write('\t0;JEQ\n')
+
         # return address
         self._output_file.write('(' + label + ')\n')
 
@@ -297,7 +294,7 @@ class CodeWriter:
         self._output_file.write('\t@R14\n')
         self._output_file.write('\tM=D\n')
 
-        # ARG = pop()
+        # *ARG = pop()
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tM=M-1\n')
         self._output_file.write('\t@SP\n')
