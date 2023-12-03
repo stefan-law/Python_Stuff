@@ -31,6 +31,8 @@ class CodeWriter:
         self._label_count = 0  # allows us to write an arbitrary number of labels and will be iterated
         self._return_label_index = 0  # allows us to write an arbitrary number of return address labels
 
+        self._static_index = 0
+
         # bootstrap code
         self._output_file.write('//bootstrap code\n')
         self._output_file.write('\t@256\n')
@@ -108,8 +110,7 @@ class CodeWriter:
                              index) + '\n\tD=A\n\t@THAT\n\tA=D+M\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n',
                          'temp': '\t@' + str(index + 5) + '\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1',
                          'pointer': '\t@' + this_that + '\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n',
-                         'static': '\t@' + self._output_filename[:-3] + str(
-                             index) + '\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n'}
+                         'static': '\t@' + self._input_filename + '.' + str(index) + '\n\tD=M\n\t@SP\n\tA=M\n\tM=D\n\t@SP\n\tM=M+1\n'}
 
         pop_segments = {'local': '\t@' + str(
             index) + '\n\tD=A\n\t@LCL\n\tM=D+M\n\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@LCL\n\tA=M\n\tM=D\n\t@' + str(
@@ -125,8 +126,7 @@ class CodeWriter:
                             index) + '\n\tD=A\n\t@THAT\n\tM=M-D\n',
                         'temp': '\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@' + str(index + 5) + '\n\tM=D\n',
                         'pointer': '\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@' + this_that + '\n\tM=D\n',
-                        'static': '\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@' + self._output_filename[:-3] + str(
-                            index) + '\n\tM=D\n'
+                        'static': '\t@SP\n\tM=M-1\n\tA=M\n\tD=M\n\t@' + self._input_filename + '.' + str(index) + '\n\tM=D\n'
                         }
 
         self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
@@ -160,10 +160,10 @@ class CodeWriter:
         self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
 
         self._output_file.write('\t@SP\n')
-        self._output_file.write('\tA=M-1\n')
-        self._output_file.write('\tD=M\n')
-        self._output_file.write('\t@SP\n')
         self._output_file.write('\tM=M-1\n')
+        self._output_file.write('\t@SP\n')
+        self._output_file.write('\tA=M\n')
+        self._output_file.write('\tD=M\n')
         self._output_file.write('\t@' + label + '\n')
         self._output_file.write('\tD;JNE\n')
 
@@ -202,6 +202,7 @@ class CodeWriter:
             self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
 
         label = function_name + '$ret.' + str(self._return_label_index)
+        self._return_label_index += 1
 
         # push return address
         self._output_file.write('\t@' + label + '\n')  # point to return address
@@ -360,10 +361,11 @@ class CodeWriter:
         """
         self._input_filename = file_name[:-3]
         self._active_parser = self._parser_dict_copy[file_name]
+        self._static_index = 0
 
     def close(self):
         """"""
-        self.write_end_loop()  # write an infinite loop at end of code to protect memory intrusion
+        # self.write_end_loop()  # write an infinite loop at end of code to protect memory intrusion
         self._output_file.close()  # close file
 
     def write_end_loop(self):
