@@ -7,7 +7,7 @@ import sys
 class CodeWriter:
     """
     See readme for documentation of assembly segments
-    Has capabilites for writing arithmetic/logical commands and push/pop commands
+    Has capabilites for writing arithmetic/logical commands, push/pop commands
     Has method for adding infinite loop at end of file and closing it when translation complete
     """
 
@@ -154,8 +154,6 @@ class CodeWriter:
     def writeIf(self, label):
         """
 
-        :param label: string
-        :return:
         """
         self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
 
@@ -191,20 +189,18 @@ class CodeWriter:
 
     def writeCall(self, function_name, n_args):
         """
-
-        :param function_name: string
-        :param n_args: int
-        :return:
+        writes code for calling a function
+        takes function name and number of args (int) as parameters
         """
         if function_name == 'Sys.init':
             self._output_file.write('//call Sys.init\n')
         else:
-            self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
+            self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comments for debugging
 
-        label = function_name + '$ret.' + str(self._return_label_index)
+        label = function_name + '$ret.' + str(self._return_label_index)  #  creates a unique label in code
         self._return_label_index += 1
 
-        # push return address
+        # push return address of caller function
         self._output_file.write('\t@' + label + '\n')  # point to return address
         self._output_file.write('\tD=A\n')  # store return address in D register
         self._output_file.write('\t@SP\n')  # point to stack pointer
@@ -213,16 +209,16 @@ class CodeWriter:
         self._output_file.write('\t@SP\n')  # increment stack pointer
         self._output_file.write('\tM=M+1\n')
 
-        # push LCL
-        self._output_file.write('\t@LCL\n')
-        self._output_file.write('\tD=M\n')
-        self._output_file.write('\t@SP\n')
-        self._output_file.write('\tA=M\n')
-        self._output_file.write('\tM=D\n')
-        self._output_file.write('\t@SP\n')
-        self._output_file.write('\tM=M+1\n')
+        # push LCL of caller function
+        self._output_file.write('\t@LCL\n')  # point to LCL address
+        self._output_file.write('\tD=M\n')   # store LCL address in D register
+        self._output_file.write('\t@SP\n')   # point to stack pointer
+        self._output_file.write('\tA=M\n')   # point to top of stack
+        self._output_file.write('\tM=D\n')   # push LCL address onto stack
+        self._output_file.write('\t@SP\n')   # point to stack pointer
+        self._output_file.write('\tM=M+1\n') # increment stack pointer
 
-        # push ARG
+        # push ARG of caller function
         self._output_file.write('\t@ARG\n')
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@SP\n')
@@ -231,7 +227,7 @@ class CodeWriter:
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tM=M+1\n')
 
-        # push THIS
+        # push THIS of caller function
         self._output_file.write('\t@THIS\n')
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@SP\n')
@@ -240,7 +236,7 @@ class CodeWriter:
         self._output_file.write('\t@SP\n')
         self._output_file.write('\tM=M+1\n')
 
-        # push THAT
+        # push THAT of caller function
         self._output_file.write('\t@THAT\n')
         self._output_file.write('\tD=M\n')
         self._output_file.write('\t@SP\n')
@@ -274,8 +270,7 @@ class CodeWriter:
 
     def writeReturn(self):
         """
-
-        :return:
+        writes return method for a callee
         """
         self._output_file.write("// " + self._active_parser.get_command() + '\n')  # comment for debugging
 
