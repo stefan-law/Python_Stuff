@@ -1,11 +1,11 @@
 import os
 import sys
-
 import compilationEngine, tokenizer
 
-
 def main():
-    """"""
+    """
+    Initializes and invokes tokenizer and compilation engine
+    """
     input_filename = sys.argv[1]
     tokenizer_list = []
     engine_list = []
@@ -39,7 +39,9 @@ def main():
 
 
 def token_typer(tokens) -> str:
-
+    """
+    Formats token type for XML output
+    """
     match tokens.token_type():
         case 'INT_CONST':
             return 'integerConstant'
@@ -47,7 +49,6 @@ def token_typer(tokens) -> str:
             return 'stringConstant'
         case _:
             return tokens.token_type().lower()
-
 
 
 if __name__ == "__main__":

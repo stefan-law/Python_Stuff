@@ -62,7 +62,7 @@ class CompilationEngine:
         """Compiles a term"""
         pass
 
-    def compile_expression_list(self)-> int:
-        """Compiles a comma separated lis of expressions
+    def compile_expression_list(self)  xc3-> int:
+        """Compiles a comma separated list of expressions
         Returns integer of expressions in list"""
         pass

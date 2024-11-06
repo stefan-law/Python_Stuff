@@ -123,7 +123,6 @@ class Tokenizer:
             self._char = self._file.read(1)
             return
 
-
         # Build buffer until whitespace or symbol encountered (or EOF)
         while self._char not in self._symbol_table and self._char not in self._whitespace_table:
             self._buffer += self._char
