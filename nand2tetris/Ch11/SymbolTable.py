@@ -35,8 +35,8 @@ class SymbolTable:
         :param kind: string kind of the variable being defined
         :return: None
         """
-        self._table[name] = {"type": type, "kind": kind, "index": self._counts[kind]}
-        self._counts[kind] += 1
+        self._table[name] = {"type": type, "kind": kind, "index": self._counts[kind.upper()]}
+        self._counts[kind.upper()] += 1
 
     def varCount(self, kind: str) -> int:
         """

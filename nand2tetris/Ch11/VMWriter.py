@@ -2,6 +2,7 @@
 # Date: 11/04/2024
 # Description: Used by compilationEngine script to write individual lines of
 # VM code in Jack language
+
 from __future__ import annotations
 from tokenizer import Tokenizer
 
@@ -20,6 +21,18 @@ class VMWriter:
         :param index:
         :return:
         """
+        match segment.upper():
+            case "STATIC":
+                segment = "static"
+            case "FIELD":
+                segment = "this"
+            case "ARG":
+                segment = "argument"
+            case "VAR":
+                segment = "local"
+            case _:
+                pass
+
         self._output_file.write(f"push {segment} {index}\n")
 
     def writePop(self, segment: str, index: int) -> None:
@@ -29,6 +42,18 @@ class VMWriter:
         :param index:
         :return:
         """
+        match segment.upper():
+            case "STATIC":
+                segment = "static"
+            case "FIELD":
+                segment = "this"
+            case "ARG":
+                segment = "argument"
+            case "VAR":
+                segment = "local"
+            case _:
+                pass
+
         self._output_file.write(f"pop {segment} {index}\n")
 
     def writeArithmetic(self, command: str) -> None:
