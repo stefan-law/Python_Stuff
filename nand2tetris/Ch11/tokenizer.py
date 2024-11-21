@@ -194,4 +194,4 @@ class Tokenizer:
     def string_val(self) -> str:
         """"""
         
-        return self._buffer[1:-1]
+        return self._buffer

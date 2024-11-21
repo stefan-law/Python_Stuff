@@ -249,10 +249,10 @@ class CompilationEngine:
         next = self._tokenizer.get_token()
 
         if next == "[":  # handle an array index assignment arr[i] = expr2
-            self.compile_expression()  # determine and push arr index
             self._writer.writePush(kind, index) # push arr address value to stack
+            self._tokenizer.advance()
+            self.compile_expression()  # determine and push arr index
             self._writer.writeArithmetic("add")
-            self._tokenizer.advance()  # advance to closing bracket
             self._tokenizer.advance()  # advance to equal
             self._tokenizer.advance()  # advance to expr2
             self.compile_expression()  # push expr2 to stack
@@ -410,7 +410,7 @@ class CompilationEngine:
     def compile_expression(self) -> None:
         """Compiles an expression"""
 
-        expression_terminators = [',', ')', ';', '}', '{']
+        expression_terminators = [',', ')', ';', '}', '{', ']']
         unary_op = {'-': "neg", '~': "not"}
         binary_op = ['+', '-', '*', '/', '&', '|', '<', '>', '=']
         keyword_const = ["null", "false", "true", "this"]
@@ -419,6 +419,7 @@ class CompilationEngine:
         # Write expression (multiple terms) in postfix using expression list
         while self._tokenizer.get_token() not in expression_terminators:
             current_token = self._tokenizer.get_token()
+
             # An additional open parenthesis denotes another expression
             if current_token == '(':
                 self._tokenizer.advance()
@@ -450,17 +451,33 @@ class CompilationEngine:
                 self.compile_term("keywordConstant", current_token)
                 self._tokenizer.advance()
 
+            # Check for string
+            elif current_token[0] == '\'' or current_token[0] == '\"':
+                # Calculate and push input string length to stack
+                string_length = len(current_token) - 2
+                self._writer.writePush("constant", string_length)
+                # Call string constructor
+                self._writer.writeCall("String.new", 1)
+                # Push the character code for each character in the string onto the stack,
+                # and then call appendChar
+                for char in current_token[1:-1]:
+                    self._writer.writePush("constant", ord(char))
+                    self._writer.writeCall("String.appendChar", 2)
+
+                self._tokenizer.advance()
+
+
             # Check for variables or array access
             elif current_token in self._subroutine_table._table or current_token in self._class_table._table:
                 self.compile_term("varName", current_token)  # push array name or variable name
                 self._tokenizer.advance()
 
-                if self._tokenizer.get_token() == "[":
-                    self._tokenizer.advance()  # advance past opening bracket
-                    self.compile_expression()  # determine and push arr index
-                    self.compile_term("array")
-                    if self._tokenizer.get_token() == ']':
-                        self._tokenizer.advance() # advance past closing bracket
+            elif self._tokenizer.get_token() == "[":
+                self._tokenizer.advance()  # advance past opening bracket
+                self.compile_expression()  # determine and push arr index
+                self.compile_term("array")
+                if self._tokenizer.get_token() == ']':
+                    self._tokenizer.advance()  # advance past closing bracket
 
             # Must be a function call
             else:
