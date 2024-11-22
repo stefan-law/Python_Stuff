@@ -415,6 +415,7 @@ class CompilationEngine:
         binary_op = ['+', '-', '*', '/', '&', '|', '<', '>', '=']
         keyword_const = ["null", "false", "true", "this"]
         unary_flag = 1
+        type = None
 
         # Write expression (multiple terms) in postfix using expression list
         while self._tokenizer.get_token() not in expression_terminators:
@@ -466,10 +467,10 @@ class CompilationEngine:
 
                 self._tokenizer.advance()
 
-
             # Check for variables or array access
             elif current_token in self._subroutine_table._table or current_token in self._class_table._table:
-                self.compile_term("varName", current_token)  # push array name or variable name
+                # We retain segment and index in case we have var.method() call
+                type = self.compile_term("varName", current_token)  # push array name or variable name
                 self._tokenizer.advance()
 
             elif self._tokenizer.get_token() == "[":
@@ -478,6 +479,16 @@ class CompilationEngine:
                 self.compile_term("array")
                 if self._tokenizer.get_token() == ']':
                     self._tokenizer.advance()  # advance past closing bracket
+
+            # Check for method that is related to a variable call
+            elif self._tokenizer.get_token() == '.':
+                self._tokenizer.advance()
+                function_name = self._tokenizer.get_token()
+                self._tokenizer.advance()  # advance to opening parenthesis
+                self._tokenizer.advance()  # advance to args
+                n_args = self.compile_expression_list()
+                self._tokenizer.advance()  # advance past closing parenthesis
+                self._writer.writeCall(f"{type}.{function_name}", n_args + 1)
 
             # Must be a function call
             else:
@@ -522,7 +533,7 @@ class CompilationEngine:
             # If not at beginning of loop for current expression, can't be unary
             unary_flag = 0
 
-    def compile_term(self, term_type: str, term=None) -> None:
+    def compile_term(self, term_type: str, term=None) -> None | str:
         """Compiles a term"""
         keyword_const = {"null": {"segment": "constant", "index": 0}, "false": {"segment": "constant", "index": 0},
                          "true": {"segment": "constant", "index": 1}, "this": {"segment": "pointer", "index": 0}}
@@ -569,11 +580,15 @@ class CompilationEngine:
             if term in self._subroutine_table._table.keys():
                 segment = self._subroutine_table._table[term]["kind"]
                 index = self._subroutine_table._table[term]["index"]
+                type = self._subroutine_table._table[term]["type"]
             elif term in self._class_table._table.keys():
                 segment = self._class_table._table[term]["kind"]
                 index = self._class_table._table[term]["index"]
+                type = self._class_table._table[term]["type"]
 
             self._writer.writePush(segment, index)
+            # Return segment and index of variable in case it's an object method call
+            return type
 
     def compile_expression_list(self) -> int:
         """
